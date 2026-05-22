@@ -1,0 +1,23 @@
+# runs 目录是本地 trace，体积大且每次执行都生成
+# 保留目录结构但不提交内容
+runs/*
+!runs/.gitkeep
+
+# 环境与编辑器
+.env
+.env.local
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node（若 Skill 实现选 node）
+node_modules/
+
+# LiteLLM 缓存
+.litellm_cache/
