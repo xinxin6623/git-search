@@ -45,6 +45,7 @@ from jsonschema import Draft202012Validator
 # 让 _lib 可 import
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from _lib.config import StageConfig, load_stage_config  # noqa: E402
+from _lib.llm import LLMCallError, LLMMetrics, call_llm  # noqa: E402
 
 # litellm 仅在真正调 LLM 时导入；dry-run / 单纯校验输出不需要它
 
@@ -289,25 +290,7 @@ def build_messages(
     ]
 
 
-def call_llm(messages: list[dict[str, str]], cfg: StageConfig) -> str:
-    try:
-        import litellm
-    except ImportError:
-        raise RuntimeError(
-            "缺 litellm，运行: pip3 install --break-system-packages litellm"
-        )
-    kwargs: dict[str, Any] = {
-        "model": cfg.model,
-        "messages": messages,
-        "timeout": cfg.timeout_seconds,
-        "temperature": cfg.temperature,
-    }
-    if cfg.api_base:
-        kwargs["api_base"] = cfg.api_base
-    if cfg.api_key:
-        kwargs["api_key"] = cfg.api_key
-    resp = litellm.completion(**kwargs)
-    return resp["choices"][0]["message"]["content"]
+# call_llm 来自 skills/_lib/llm.py，返回 (content, LLMMetrics)
 
 
 # ============== 输出校验 ==============
@@ -464,6 +447,7 @@ def main() -> int:
         log("→ DRY RUN（不调 LLM）")
 
     counts = {"reject": 0, "maybe": 0, "deepdive": 0, "error": 0}
+    metrics_log: list[LLMMetrics] = []  # 用于 summary 聚合
     today = dt.date.today()
 
     with trace_path.open("w", encoding="utf-8") as trace_f:
@@ -489,17 +473,24 @@ def main() -> int:
                 continue
 
             try:
-                raw = call_llm(messages, cfg)
-            except Exception as e:  # litellm/网络/超时都在此
-                err(f"  ! LLM 调用失败: {e}")
+                raw, metrics = call_llm(messages, cfg)
+            except LLMCallError as e:
+                err(f"  ! LLM 调用失败 ({e.metrics.latency_s}s): {e}")
                 counts["error"] += 1
+                metrics_log.append(e.metrics)
                 trace_f.write(json.dumps(
-                    {"repo": c.repo, "stage": "llm", "error": str(e)},
+                    {"repo": c.repo, "stage": "llm",
+                     "metrics": e.metrics.to_dict()},
                     ensure_ascii=False,
                 ) + "\n")
                 # 设计原则：失败即停
                 err("失败即停。修复后重跑。")
                 break
+
+            metrics_log.append(metrics)
+            log(f"  · llm {metrics.latency_s}s  "
+                f"in={metrics.prompt_tokens} out={metrics.completion_tokens}"
+                + (f" think={metrics.reasoning_chars}ch" if metrics.reasoning_chars else ""))
 
             try:
                 obj = parse_and_validate(raw)
@@ -507,7 +498,8 @@ def main() -> int:
                 err(f"  ! 输出校验失败: {e}")
                 counts["error"] += 1
                 trace_f.write(json.dumps(
-                    {"repo": c.repo, "stage": "validate", "error": str(e), "raw": raw},
+                    {"repo": c.repo, "stage": "validate", "error": str(e),
+                     "metrics": metrics.to_dict(), "raw": raw},
                     ensure_ascii=False,
                 ) + "\n")
                 continue
@@ -525,13 +517,25 @@ def main() -> int:
                     "repo": c.repo,
                     "stage": "done",
                     "decision": obj["decision"],
+                    "metrics": metrics.to_dict(),
                     "raw": raw,
                     "parsed": obj,
                 },
                 ensure_ascii=False,
             ) + "\n")
 
-    # Summary
+    # ============== Summary: 决策分布 + LLM 用量聚合 ==============
+    ok = [m for m in metrics_log if m.error is None]
+    lat = [m.latency_s for m in ok]
+    pt = [m.prompt_tokens or 0 for m in ok]
+    ct = [m.completion_tokens or 0 for m in ok]
+    tt = [m.total_tokens or 0 for m in ok]
+
+    def stat(xs: list[float]) -> str:
+        if not xs:
+            return "n/a"
+        return f"sum={sum(xs):.1f} avg={sum(xs)/len(xs):.1f} min={min(xs):.1f} max={max(xs):.1f}"
+
     summary = [
         f"# triage summary — {ts}",
         "",
@@ -546,12 +550,22 @@ def main() -> int:
         f"- maybe:    {counts['maybe']}",
         f"- deepdive: {counts['deepdive']}",
         f"- error:    {counts['error']}",
+        "",
+        f"## LLM 用量（成功 {len(ok)} 次）",
+        f"- 时延 (秒):       {stat(lat)}",
+        f"- prompt_tokens:   {stat(pt)}",
+        f"- completion_tokens: {stat(ct)}",
+        f"- total_tokens:    {stat(tt)}",
     ]
     summary_path.write_text("\n".join(summary), encoding="utf-8")
 
     log("\n✓ done")
     log(f"  reject={counts['reject']} maybe={counts['maybe']} "
         f"deepdive={counts['deepdive']} error={counts['error']}")
+    if ok:
+        log(f"  llm: 共 {len(ok)} 次, "
+            f"总耗时 {sum(lat):.1f}s, 总 token {sum(tt)} "
+            f"(in={sum(pt)} out={sum(ct)})")
     log(f"  trace: {run_dir}")
     return 0
 
