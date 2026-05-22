@@ -31,6 +31,22 @@
 
 > **部署路径**: 设计文档使用 `~/.ai-radar/` 作为部署根目录。本仓库为版本管控副本，部署时可 `ln -s` 或 rsync 到 `~/.ai-radar/`。
 
+## 模型配置
+
+所有 LLM 调用走根目录 [`config.yaml`](./config.yaml)，按阶段（triage / deepdive）独立路由。切模型只改配置，不动代码：
+
+```yaml
+triage:
+  active: local-qwen3-14b   # ← 改这里
+  profiles:
+    local-qwen3-14b: ...    # ollama 本地
+    cloud-deepseek-chat: ...# 云端 API
+    cloud-gpt-4o-mini: ...
+    ...
+```
+
+支持本地（ollama）与云端（OpenAI / Anthropic / DeepSeek / 自建 LiteLLM Proxy）。完整字段见 `config.yaml` 注释。
+
 ## 五步管线
 
 ```

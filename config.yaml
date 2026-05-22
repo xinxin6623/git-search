@@ -1,0 +1,108 @@
+# ai-radar 统一配置
+#
+# 所有 Skill 启动时读取本文件。修改后无需改代码。
+# LiteLLM 路由约定:
+#   - 本地 ollama:  model: "ollama/<name>"  + api_base: "http://localhost:11434"
+#   - OpenAI:       model: "gpt-4o-mini"    + 环境变量 OPENAI_API_KEY
+#   - Anthropic:    model: "claude-sonnet-4-6"  + ANTHROPIC_API_KEY
+#   - DeepSeek:     model: "deepseek/deepseek-chat"  + DEEPSEEK_API_KEY
+#   - LiteLLM Proxy: model: 任意 + api_base: "http://your-proxy:4000"
+#
+# 切模型 = 改这里的 active 与 profiles，不动 Python 代码。
+
+version: 1
+
+# ============== Triage 阶段 ==============
+# 用途: 对 scan 出的 candidate 做 reject/maybe/deepdive 三档决策。
+# 原则: 量大、便宜、人工兜底。默认本地。
+triage:
+  active: local-qwen3-14b     # 指向下方 profiles 里的某个 key
+  temperature: 0.2
+  timeout_seconds: 60
+  fallback: null              # 失败即停 (Phase 1 不静默降级)
+
+  profiles:
+    local-qwen3-14b:
+      provider: ollama
+      model: ollama/qwen3:14b
+      api_base: http://localhost:11434
+      api_key_env: null       # ollama 不需要 key
+
+    local-qwen3-4b:
+      provider: ollama
+      model: ollama/qwen3:4b
+      api_base: http://localhost:11434
+      api_key_env: null
+
+    local-llama32-3b:
+      provider: ollama
+      model: ollama/llama3.2:3b
+      api_base: http://localhost:11434
+      api_key_env: null
+
+    cloud-deepseek-chat:
+      provider: deepseek
+      model: deepseek/deepseek-chat
+      api_base: null          # 用 SDK 默认 endpoint
+      api_key_env: DEEPSEEK_API_KEY
+
+    cloud-gpt-4o-mini:
+      provider: openai
+      model: gpt-4o-mini
+      api_base: null
+      api_key_env: OPENAI_API_KEY
+
+# ============== Deepdive 阶段 ==============
+# 用途: 对 triage=deepdive 的 repo 生成结构化 entry。
+# 原则: 结构化输出质量更重要，默认远端强模型。
+deepdive:
+  active: cloud-claude-sonnet-46
+  temperature: 0.3
+  timeout_seconds: 180
+  max_runs_per_week: 5        # 成本控制，由调用方维护配额计数
+  fallback: local-qwen3-14b   # 远端不可用时降级，entry 自动标 quality=degraded
+
+  profiles:
+    cloud-claude-sonnet-46:
+      provider: anthropic
+      model: claude-sonnet-4-6
+      api_base: null
+      api_key_env: ANTHROPIC_API_KEY
+
+    cloud-claude-opus-47:
+      provider: anthropic
+      model: claude-opus-4-7
+      api_base: null
+      api_key_env: ANTHROPIC_API_KEY
+
+    cloud-deepseek-v3:
+      provider: deepseek
+      model: deepseek/deepseek-chat
+      api_base: null
+      api_key_env: DEEPSEEK_API_KEY
+
+    local-qwen3-14b:
+      provider: ollama
+      model: ollama/qwen3:14b
+      api_base: http://localhost:11434
+      api_key_env: null
+
+# ============== LiteLLM Proxy (可选) ==============
+# 若你有自建 LiteLLM Proxy（统一 router + 成本统计），把上面任意 profile 的
+# api_base 改为 proxy 地址，并把 model 改成 proxy 里注册的别名即可。
+# 例:
+#   profiles:
+#     via-proxy:
+#       provider: openai          # 任意，proxy 兼容 openai 协议
+#       model: my-router-alias
+#       api_base: http://localhost:4000
+#       api_key_env: LITELLM_MASTER_KEY
+
+# ============== 全局观测 (可选) ==============
+observability:
+  # 若启用，会把 trace 同时写一份去 langfuse（Phase 1 默认关闭）
+  langfuse:
+    enabled: false
+    host: https://cloud.langfuse.com
+    public_key_env: LANGFUSE_PUBLIC_KEY
+    secret_key_env: LANGFUSE_SECRET_KEY
