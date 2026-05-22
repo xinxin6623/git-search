@@ -4,6 +4,8 @@
     from skills._lib.config import load_stage_config
     cfg = load_stage_config("triage")
     # cfg.model, cfg.api_base, cfg.api_key, cfg.temperature, cfg.timeout, cfg.fallback
+
+启动时会自动加载根目录 .env 文件（若存在），从而把 *_API_KEY 注入进程环境。
 """
 
 from __future__ import annotations
@@ -17,6 +19,15 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPO_ROOT / "config.yaml"
+ENV_PATH = REPO_ROOT / ".env"
+
+# 在 import 时尝试加载 .env（不存在/装不上 dotenv 都静默）
+try:
+    from dotenv import load_dotenv  # type: ignore
+    if ENV_PATH.exists():
+        load_dotenv(ENV_PATH, override=False)
+except ImportError:
+    pass
 
 
 @dataclass

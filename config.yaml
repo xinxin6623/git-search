@@ -76,7 +76,7 @@ triage:
 # 原则: 结构化输出质量更重要，默认走 Kimi (Moonshot) k2.6。
 deepdive:
   active: kimi-k2-6
-  temperature: 0.3
+  temperature: 1                                  # kimi-k2.6 是 thinking 模型，只接受 temperature=1
   timeout_seconds: 180
   max_runs_per_week: 5                            # 成本控制，由调用方维护配额计数
   fallback: siliconflow-qwen3-omni-30b-thinking   # 远端 kimi 不可用时降级
