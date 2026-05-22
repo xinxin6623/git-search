@@ -37,15 +37,18 @@
 
 ```yaml
 triage:
-  active: local-qwen3-14b   # ← 改这里
+  active: siliconflow-qwen3-omni-30b-thinking   # ← 改这里
   profiles:
-    local-qwen3-14b: ...    # ollama 本地
-    cloud-deepseek-chat: ...# 云端 API
+    siliconflow-qwen3-omni-30b-thinking: ...    # 默认（OpenAI 兼容协议）
+    siliconflow-qwen3-14b: ...
+    siliconflow-deepseek-v32: ...
+    local-qwen3-14b: ...                        # ollama 本地备用
+    cloud-deepseek-chat: ...
     cloud-gpt-4o-mini: ...
     ...
 ```
 
-支持本地（ollama）与云端（OpenAI / Anthropic / DeepSeek / 自建 LiteLLM Proxy）。完整字段见 `config.yaml` 注释。
+支持 SiliconFlow（硅基流动）/ 本地 ollama / 云端（OpenAI / Anthropic / DeepSeek / 自建 LiteLLM Proxy）。完整字段见 `config.yaml` 注释。
 
 ## 五步管线
 

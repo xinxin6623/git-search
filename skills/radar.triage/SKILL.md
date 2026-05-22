@@ -20,15 +20,17 @@ trigger: 手动 `python3 skills/radar.triage/triage.py <direction> [--since YYYY
 ## 配置（统一在 `config.yaml`）
 
 切模型 = 改 `triage.active` 字段。可选 profile（开箱即用）:
-- `local-qwen3-14b` (默认，需 `ollama pull qwen3:14b` ~9GB)
+- `siliconflow-qwen3-omni-30b-thinking` (默认，需 `SILICONFLOW_API_KEY`)
+- `siliconflow-qwen3-14b`
+- `siliconflow-deepseek-v32`
+- `local-qwen3-14b` (需 `ollama pull qwen3:14b` ~9GB)
 - `local-qwen3-4b` (1-2GB，验证管线足够)
-- `local-llama32-3b`
 - `cloud-deepseek-chat` (需 `DEEPSEEK_API_KEY`)
 - `cloud-gpt-4o-mini` (需 `OPENAI_API_KEY`)
 
 加 profile / 接 LiteLLM Proxy：直接在 `config.yaml` 里加块即可，无需改代码。
 
-CLI 临时覆盖：`--profile cloud-deepseek-chat`
+CLI 临时覆盖：`--profile siliconflow-qwen3-14b`
 
 ## Setup
 
@@ -36,13 +38,16 @@ CLI 临时覆盖：`--profile cloud-deepseek-chat`
 # Python 依赖
 pip3 install --break-system-packages litellm pyyaml jsonschema
 
-# 本地模型（任选其一）
-ollama pull qwen3:14b      # 默认
-# ollama pull qwen3:4b     # 想小点
-# ollama pull llama3.2:3b
+# 默认 profile：硅基流动 API key
+# https://cloud.siliconflow.cn/account/ak
+export SILICONFLOW_API_KEY=sk-...
 
-# 或云端 key
-export DEEPSEEK_API_KEY=sk-...
+# 或本地 ollama（备用）
+# ollama pull qwen3:14b
+# ollama pull qwen3:4b
+
+# 或其他云端
+# export DEEPSEEK_API_KEY=sk-...
 # export OPENAI_API_KEY=...
 ```
 

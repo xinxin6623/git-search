@@ -2,11 +2,13 @@
 #
 # 所有 Skill 启动时读取本文件。修改后无需改代码。
 # LiteLLM 路由约定:
-#   - 本地 ollama:  model: "ollama/<name>"  + api_base: "http://localhost:11434"
-#   - OpenAI:       model: "gpt-4o-mini"    + 环境变量 OPENAI_API_KEY
-#   - Anthropic:    model: "claude-sonnet-4-6"  + ANTHROPIC_API_KEY
-#   - DeepSeek:     model: "deepseek/deepseek-chat"  + DEEPSEEK_API_KEY
-#   - LiteLLM Proxy: model: 任意 + api_base: "http://your-proxy:4000"
+#   - 本地 ollama:    model: "ollama/<name>"  + api_base: "http://localhost:11434"
+#   - SiliconFlow:    model: "openai/<repo-id>" + api_base: "https://api.siliconflow.cn/v1"
+#                     + SILICONFLOW_API_KEY  (OpenAI 兼容协议)
+#   - OpenAI:         model: "gpt-4o-mini"    + 环境变量 OPENAI_API_KEY
+#   - Anthropic:      model: "claude-sonnet-4-6"  + ANTHROPIC_API_KEY
+#   - DeepSeek:       model: "deepseek/deepseek-chat"  + DEEPSEEK_API_KEY
+#   - LiteLLM Proxy:  model: 任意 + api_base: "http://your-proxy:4000"
 #
 # 切模型 = 改这里的 active 与 profiles，不动 Python 代码。
 
@@ -14,19 +16,39 @@ version: 1
 
 # ============== Triage 阶段 ==============
 # 用途: 对 scan 出的 candidate 做 reject/maybe/deepdive 三档决策。
-# 原则: 量大、便宜、人工兜底。默认本地。
+# 原则: 量大、便宜、人工兜底。默认走 SiliconFlow (硅基流动)。
 triage:
-  active: local-qwen3-14b     # 指向下方 profiles 里的某个 key
+  active: siliconflow-qwen3-omni-30b-thinking   # 指向下方 profiles 里的某个 key
   temperature: 0.2
-  timeout_seconds: 60
-  fallback: null              # 失败即停 (Phase 1 不静默降级)
+  timeout_seconds: 120          # thinking 模型推理稍慢，放宽
+  fallback: null                # 失败即停 (Phase 1 不静默降级)
 
   profiles:
+    # SiliconFlow（硅基流动）— OpenAI 兼容协议，通过 litellm "openai/" 前缀路由
+    siliconflow-qwen3-omni-30b-thinking:
+      provider: siliconflow
+      model: openai/Qwen/Qwen3-Omni-30B-A3B-Thinking
+      api_base: https://api.siliconflow.cn/v1
+      api_key_env: SILICONFLOW_API_KEY
+
+    siliconflow-qwen3-14b:
+      provider: siliconflow
+      model: openai/Qwen/Qwen3-14B
+      api_base: https://api.siliconflow.cn/v1
+      api_key_env: SILICONFLOW_API_KEY
+
+    siliconflow-deepseek-v32:
+      provider: siliconflow
+      model: openai/deepseek-ai/DeepSeek-V3.2
+      api_base: https://api.siliconflow.cn/v1
+      api_key_env: SILICONFLOW_API_KEY
+
+    # 本地 ollama（备用，需 ollama pull）
     local-qwen3-14b:
       provider: ollama
       model: ollama/qwen3:14b
       api_base: http://localhost:11434
-      api_key_env: null       # ollama 不需要 key
+      api_key_env: null
 
     local-qwen3-4b:
       provider: ollama
@@ -34,16 +56,11 @@ triage:
       api_base: http://localhost:11434
       api_key_env: null
 
-    local-llama32-3b:
-      provider: ollama
-      model: ollama/llama3.2:3b
-      api_base: http://localhost:11434
-      api_key_env: null
-
+    # 其他云端
     cloud-deepseek-chat:
       provider: deepseek
       model: deepseek/deepseek-chat
-      api_base: null          # 用 SDK 默认 endpoint
+      api_base: null            # 用 SDK 默认 endpoint
       api_key_env: DEEPSEEK_API_KEY
 
     cloud-gpt-4o-mini:
@@ -59,8 +76,8 @@ deepdive:
   active: cloud-claude-sonnet-46
   temperature: 0.3
   timeout_seconds: 180
-  max_runs_per_week: 5        # 成本控制，由调用方维护配额计数
-  fallback: local-qwen3-14b   # 远端不可用时降级，entry 自动标 quality=degraded
+  max_runs_per_week: 5                            # 成本控制，由调用方维护配额计数
+  fallback: siliconflow-qwen3-omni-30b-thinking   # 远端 claude 不可用时降级
 
   profiles:
     cloud-claude-sonnet-46:
@@ -80,6 +97,18 @@ deepdive:
       model: deepseek/deepseek-chat
       api_base: null
       api_key_env: DEEPSEEK_API_KEY
+
+    siliconflow-qwen3-omni-30b-thinking:
+      provider: siliconflow
+      model: openai/Qwen/Qwen3-Omni-30B-A3B-Thinking
+      api_base: https://api.siliconflow.cn/v1
+      api_key_env: SILICONFLOW_API_KEY
+
+    siliconflow-deepseek-v32:
+      provider: siliconflow
+      model: openai/deepseek-ai/DeepSeek-V3.2
+      api_base: https://api.siliconflow.cn/v1
+      api_key_env: SILICONFLOW_API_KEY
 
     local-qwen3-14b:
       provider: ollama
