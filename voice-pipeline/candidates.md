@@ -17,5 +17,5 @@
 
 <!-- scan 2026-05-22-1701 -->
 - [x] SimoneGuarino/astra · ★0 · 提交2d · "Astra is a local desktop AI assistant built with Tauri, Rust, React, Ollama, and"
-- [ ] cyijun/hachimi · ★4 · 提交110d · "A modular, multiprocessing voice assistant built with Python. This project integ"
-- [ ] sid-2672/Voice-agent · ★0 · 提交130d · "Real-time, full-duplex voice agent with <500ms latency. Built with Python Asynci"
+- [x] cyijun/hachimi · ★4 · 提交110d · "A modular, multiprocessing voice assistant built with Python. This project integ"
+- [x] sid-2672/Voice-agent · ★0 · 提交130d · "Real-time, full-duplex voice agent with <500ms latency. Built with Python Asynci"
