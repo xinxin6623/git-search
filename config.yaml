@@ -5,6 +5,8 @@
 #   - 本地 ollama:    model: "ollama/<name>"  + api_base: "http://localhost:11434"
 #   - SiliconFlow:    model: "openai/<repo-id>" + api_base: "https://api.siliconflow.cn/v1"
 #                     + SILICONFLOW_API_KEY  (OpenAI 兼容协议)
+#   - Kimi/Moonshot:  model: "openai/<model>" + api_base: "https://api.moonshot.cn/v1"
+#                     + MOONSHOT_API_KEY     (OpenAI 兼容协议)
 #   - OpenAI:         model: "gpt-4o-mini"    + 环境变量 OPENAI_API_KEY
 #   - Anthropic:      model: "claude-sonnet-4-6"  + ANTHROPIC_API_KEY
 #   - DeepSeek:       model: "deepseek/deepseek-chat"  + DEEPSEEK_API_KEY
@@ -71,15 +73,23 @@ triage:
 
 # ============== Deepdive 阶段 ==============
 # 用途: 对 triage=deepdive 的 repo 生成结构化 entry。
-# 原则: 结构化输出质量更重要，默认远端强模型。
+# 原则: 结构化输出质量更重要，默认走 Kimi (Moonshot) k2.6。
 deepdive:
-  active: cloud-claude-sonnet-46
+  active: kimi-k2-6
   temperature: 0.3
   timeout_seconds: 180
   max_runs_per_week: 5                            # 成本控制，由调用方维护配额计数
-  fallback: siliconflow-qwen3-omni-30b-thinking   # 远端 claude 不可用时降级
+  fallback: siliconflow-qwen3-omni-30b-thinking   # 远端 kimi 不可用时降级
 
   profiles:
+    # Kimi / Moonshot — OpenAI 兼容协议
+    kimi-k2-6:
+      provider: moonshot
+      model: openai/kimi-k2.6
+      api_base: https://api.moonshot.cn/v1
+      api_key_env: MOONSHOT_API_KEY
+
+    # 其他云端
     cloud-claude-sonnet-46:
       provider: anthropic
       model: claude-sonnet-4-6
