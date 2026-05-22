@@ -73,13 +73,18 @@ triage:
 
 # ============== Deepdive 阶段 ==============
 # 用途: 对 triage=deepdive 的 repo 生成结构化 entry。
-# 原则: 结构化输出质量更重要，默认走 Kimi (Moonshot) k2.6。
+# 原则: 结构化输出质量更重要，默认走 SiliconFlow DeepSeek V3.2（非 thinking、长输出友好）。
+#
+# 模型选择记录:
+# - 曾默认 kimi-k2.6 (thinking)，实测 reasoning_content 吃 max_tokens，单条 deepdive
+#   8-9 分钟、16k token 起步，与本阶段"中等输入 + 结构化长输出"不匹配，
+#   2026-05-22 改为 DeepSeek V3.2，Kimi 保留为 fallback / 特殊场景。
 deepdive:
-  active: kimi-k2-6
-  temperature: 1                                  # kimi-k2.6 是 thinking 模型，只接受 temperature=1
+  active: siliconflow-deepseek-v32
+  temperature: 0.3                                # 非 thinking，温度可控
   timeout_seconds: 180
   max_runs_per_week: 5                            # 成本控制，由调用方维护配额计数
-  fallback: siliconflow-qwen3-omni-30b-thinking   # 远端 kimi 不可用时降级
+  fallback: kimi-k2-6                             # DeepSeek 不可用时降级 Kimi
 
   profiles:
     # Kimi / Moonshot — OpenAI 兼容协议
