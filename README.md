@@ -1,5 +1,17 @@
 # 个人技术雷达系统 (ai-radar)
 
+> ⚠️ **本项目已于 2026-07-04 合并进 gitskill。**
+> 核心设计 Rubric-as-Interface 已移植到 gitout skill v2.2：
+> - 判断规则外化 → `gitskill/gitout/rubrics/{scan,triage,deepdive}.md`
+> - override 反哺 → `gitskill/gitout/decisions.md`
+> - 设计文档迁入 → `gitskill/radar-system-v2.1.md`
+> - SKILL.md 升级 → `gitskill/skills/gitout/SKILL.md` v2.2
+>
+> 本仓库的 Python 脚本 / config.yaml / voice-pipeline 实战数据作为历史参考保留，不再维护。
+> 后续所有雷达相关开发在 gitskill 进行。
+
+---
+
 按 [radar-system-v2.1.md](./radar-system-v2.1.md) 实施。Phase 1 仅跑 `voice-pipeline/Q3`。
 
 > **核心架构**: Rubric-as-Interface — 系统的"判断逻辑"全部外化为 [rubrics/](./rubrics/) 下的 markdown 文件。每次 LLM 调用加载最新 rubric。人工的核心维护动作 = 编辑 rubric。
